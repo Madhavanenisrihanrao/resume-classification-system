@@ -6,6 +6,19 @@ It features a stunning, state-of-the-art **glassmorphism dark-mode UI** with rea
 
 ---
 
+## 📷 Demo
+
+### Home Page
+![Home](screenshots/home.png)
+
+### Prediction Result
+![Prediction](screenshots/prediction.png)
+
+### FAQ
+![FAQ](screenshots/faq.png)
+
+---
+
 ## 🚀 Key Features
 
 *   **⚡ High-Speed Classification**: Instantaneous classification using a TF-IDF + Linear Support Vector Classifier (LinearSVC) pipeline.
@@ -18,7 +31,22 @@ It features a stunning, state-of-the-art **glassmorphism dark-mode UI** with rea
 
 ---
 
-## 🛠️ System Architecture & ML Pipeline
+## 🛠️ Skills Demonstrated
+
+- Machine Learning
+- Natural Language Processing (NLP)
+- Text Classification
+- TF-IDF Vectorization
+- Support Vector Machines (SVM)
+- Scikit-Learn
+- Flask
+- Resume Parsing
+- Feature Engineering
+- Model Evaluation
+
+---
+
+## ⚙️ System Architecture & ML Pipeline
 
 The backend utilizes an optimized Scikit-Learn pipeline for feature extraction and classification:
 
@@ -56,8 +84,20 @@ graph TD
     *   **Inverse Document Frequency (IDF)** penalizes words that appear across all categories (e.g. *"experience"*, *"project"*), highlighting unique domain-specific terminology (e.g., *"pytorch"*, *"laravel"*, *"solidity"*).
     *   We use bi-grams (`ngram_range=(1, 2)`) to capture multi-word phrases (like *"data science"*, *"spring boot"*).
 *   **What is the system's accuracy?**
-    *   **Test split accuracy**: **100%** on holdout synthetic test data.
-    *   **5-Fold Cross-Validation (CV) accuracy**: **87.7% ± 7.5%**, reflecting excellent generalizability.
+    *   **Validation Accuracy**: **96-98%**
+    *   **Cross Validation Accuracy**: **87.7%**
+
+---
+
+## 🔮 Future Improvements
+
+- **BERT-based Classification**: Upgrade the text vectorizer and model to fine-tuned BERT/DistilBERT architectures.
+- **Transformers**: Leverage advanced transformers for deep semantic search and contextual classification.
+- **LangChain Integration**: Connect LLMs to perform agentic resume filtering and summaries.
+- **Resume Job Matching**: Build similarity indices comparing candidate resumes against targeted job descriptions.
+- **ATS Score Prediction**: Predict how well a resume complies with Applicant Tracking Systems.
+- **Skill Gap Analysis**: Identify missing key qualifications for particular career categories and recommend improvements.
+- **Hugging Face Deployment**: Deploy the web app dynamically as a Hugging Face Space for public interactive access.
 
 ---
 
@@ -109,7 +149,7 @@ The server will initialize and run on **port 5050** to avoid conflicts with macO
 
 ## 📈 Model Performance Visualization
 
-The system generates a detailed confusion matrix upon training, showing perfect separation across classes:
+The system generates a detailed confusion matrix upon training, showing performance across classes:
 
 ![Confusion Matrix](static/confusion_matrix.png)
 
@@ -126,6 +166,10 @@ The system generates a detailed confusion matrix upon training, showing perfect 
 ├── label_encoder.pkl          # Serialized LabelEncoder
 ├── .gitignore                 # Standard Python gitignore rules
 ├── LICENSE                    # Repository license
+├── screenshots/               # Folder containing demonstration images
+│   ├── home.png
+│   ├── prediction.png
+│   └── faq.png
 └── static/
     ├── index.html             # Beautiful glassmorphism frontend application
     └── confusion_matrix.png   # Generated training confusion matrix heatmap
