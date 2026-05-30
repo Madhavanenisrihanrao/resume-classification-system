@@ -61,31 +61,25 @@ graph TD
     G --> H[Final Confidence % + Top 5 Predictions]
 ```
 
-### 🧠 Deep-Dive Technical Q&A
 
-*   **What are the system inputs & outputs?**
-    *   **Input**: Resumes in `.pdf`, `.docx`, `.doc`, `.txt` format, or pasted plain text.
-    *   **Output**: The predicted primary category, a normalized confidence score, tailored skills, category description, top 5 candidate categories, and document text statistics.
-*   **What Machine Learning model is used?**
-    *   The model is a Scikit-Learn `Pipeline` composed of a **TF-IDF Vectorizer** (converting text into numerical features) followed by a **Linear Support Vector Classifier (LinearSVC)**.
-*   **How does the preprocessing pipeline work?**
-    *   Converts all text to lowercase.
-    *   Strips URLs, hyperlinks, emails, special characters, and numeric values.
-    *   Tokenizes the cleaned text.
-    *   Filters out standard English stop words (using NLTK).
-    *   Applies **WordNet Lemmatization** to reduce words to their base dictionary form.
-    *   Discards extremely short tokens (less than 3 characters).
-*   **Why use the Support Vector Machine (SVM) algorithm?**
-    *   `LinearSVC` is exceptionally robust for high-dimensional sparse data, which is typical for TF-IDF representations.
-    *   It maximizes the margin between text categories, achieving optimal separation boundaries.
-    *   It is significantly faster to train and evaluate compared to Deep Learning architectures while maintaining extremely high accuracy on keyword-dense domain tasks.
-*   **How does TF-IDF feature extraction work?**
-    *   **Term Frequency (TF)** counts how often a term appears in a resume.
-    *   **Inverse Document Frequency (IDF)** penalizes words that appear across all categories (e.g. *"experience"*, *"project"*), highlighting unique domain-specific terminology (e.g., *"pytorch"*, *"laravel"*, *"solidity"*).
-    *   We use bi-grams (`ngram_range=(1, 2)`) to capture multi-word phrases (like *"data science"*, *"spring boot"*).
-*   **What is the system's accuracy?**
-    *   **Validation Accuracy**: **96-98%**
-    *   **Cross Validation Accuracy**: **87.7%**
+## FAQ
+
+### What model is used?
+TF-IDF Vectorizer + LinearSVC (SVM)
+
+### Why SVM?
+SVM performs exceptionally well on sparse high-dimensional text data and is computationally efficient.
+
+### What preprocessing is applied?
+- Lowercasing
+- Stop-word Removal
+- Lemmatization
+- URL/Email Removal
+- Text Cleaning
+
+### What accuracy was achieved?
+- Cross Validation Accuracy: 87.7%
+- High classification performance across 22 categories
 
 ---
 
