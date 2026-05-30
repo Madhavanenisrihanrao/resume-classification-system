@@ -1,10 +1,11 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
+
+# Distribution / packaging
 build/
 develop-eggs/
 dist/
@@ -40,3 +41,9 @@ venv.bak/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Other caches and logs
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
