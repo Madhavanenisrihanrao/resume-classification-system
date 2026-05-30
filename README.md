@@ -6,7 +6,12 @@ It features a stunning, state-of-the-art **glassmorphism dark-mode UI** with rea
 
 ---
 
-## 📷 Demo
+## Live Demo
+
+🚀 Try the application here:
+
+https://huggingface.co/spaces/srihan-ai/resume-classification-system
+
 
 ### Home Page
 ![Home](screenshots/home_clean.png)
@@ -85,11 +90,14 @@ SVM performs exceptionally well on sparse high-dimensional text data and is comp
 
 ## Future Improvements
 
-- Train on a larger real-world resume dataset
-- Add BERT/Transformer-based classification models
-- Improve support for additional resume formats
-- Add resume skill extraction and recommendations
-- Enhance category coverage with more job roles
+* Train the model on a larger real-world resume dataset instead of synthetic samples.
+* Integrate Transformer-based models such as BERT for improved classification accuracy.
+* Add resume skill extraction and personalized career recommendations.
+* Expand support for additional job categories and resume formats.
+* Improve confidence calibration and model explainability.
+* Add user authentication and classification history tracking.
+* Deploy with Docker and CI/CD pipelines for production-ready workflows.
+
 
 ---
 
