@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResumeAI — Intelligent Resume Classifier</title>
+  <meta name="description" content="Upload your resume and instantly discover your professional category using AI-powered NLP and TF-IDF classification." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════ RESET & TOKENS ══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-0: #050510;
+      --bg-1: #0d0d1f;
+      --bg-2: #12122a;
+      --bg-3: #1a1a3a;
+      --bg-glass: rgba(255,255,255,0.04);
+      --bg-glass-hover: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.08);
+      --border-glow: rgba(99,102,241,0.4);
+      --text-primary: #f0f0ff;
+      --text-secondary: #8888b8;
+      --text-muted: #44445e;
+      --accent: #6366f1;
+      --accent-2: #8b5cf6;
+      --accent-3: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --gradient-hero: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+      --gradient-card: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05));
+      --shadow-glow: 0 0 40px rgba(99,102,241,0.15);
+      --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-full: 9999px;
+      --font: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-0);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════ ANIMATED BACKGROUND ════════════════════════════════ */
+    .bg-canvas {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15;
+      animation: float 12s ease-in-out infinite;
+    }
+    .orb-1 { width: 600px; height: 600px; background: #6366f1; top: -200px; left: -150px; animation-delay: 0s; }
+    .orb-2 { width: 500px; height: 500px; background: #8b5cf6; bottom: -100px; right: -100px; animation-delay: -4s; }
+    .orb-3 { width: 300px; height: 300px; background: #06b6d4; top: 50%; left: 60%; animation-delay: -8s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-30px) scale(1.05); }
+    }
+
+    /* Grid overlay */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* ═══════════════ LAYOUT ══════════════════════════════════════════════ */
+    .page-wrapper { position: relative; z-index: 1; }
+
+    /* ═══════════════ NAVBAR ══════════════════════════════════════════════ */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(5,5,16,0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em;
+      text-decoration: none; color: var(--text-primary);
+    }
+    .nav-logo-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--gradient-hero);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .nav-badge {
+      padding: 4px 12px; border-radius: var(--radius-full);
+      background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
+      color: #a5b4fc; font-size: 0.75rem; font-weight: 600;
+    }
+    .nav-links { display: flex; gap: 8px; }
+    .nav-link {
+      padding: 8px 16px; border-radius: var(--radius-sm);
+      color: var(--text-secondary); text-decoration: none; font-size: 0.875rem;
+      font-weight: 500; transition: all var(--transition);
+    }
+    .nav-link:hover { color: var(--text-primary); background: var(--bg-glass-hover); }
+    .nav-link.active { color: var(--accent); background: rgba(99,102,241,0.1); }
+
+    /* ═══════════════ HERO ════════════════════════════════════════════════ */
+    .hero {
+      text-align: center; padding: 100px 20px 60px;
+      max-width: 800px; margin: 0 auto;
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 20px; border-radius: var(--radius-full);
+      background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);
+      color: #a5b4fc; font-size: 0.8rem; font-weight: 600;
+      margin-bottom: 28px; letter-spacing: 0.05em; text-transform: uppercase;
+      animation: fadeInDown 0.6s ease both;
+    }
+    .hero-pill-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #6366f1;
+      animation: pulse 2s ease infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.3);} }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900;
+      line-height: 1.1; letter-spacing: -0.04em;
+      animation: fadeInDown 0.6s 0.1s ease both;
+    }
+    .hero h1 .grad {
+      background: var(--gradient-hero); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub {
+      margin-top: 20px; font-size: 1.1rem; color: var(--text-secondary);
+      line-height: 1.7; max-width: 600px; margin-left: auto; margin-right: auto;
+      animation: fadeInDown 0.6s 0.2s ease both;
+    }
+
+    .hero-stats {
+      display: flex; gap: 40px; justify-content: center; margin-top: 48px;
+      animation: fadeInDown 0.6s 0.3s ease both;
+    }
+    .stat { text-align: center; }
+    .stat-value { font-size: 2rem; font-weight: 800; background: var(--gradient-hero); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px; }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════ MAIN CONTENT ════════════════════════════════════════ */
+    .main { max-width: 1100px; margin: 0 auto; padding: 0 20px 80px; }
+
+    .section-title {
+      font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .section-sub { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 24px; }
+
+    /* ═══════════════ UPLOAD CARD ═════════════════════════════════════════ */
+    .upload-section { margin-bottom: 40px; animation: fadeInDown 0.6s 0.4s ease both; }
+
+    .upload-card {
+      background: var(--bg-glass); border: 2px dashed var(--border);
+      border-radius: var(--radius); padding: 60px 40px;
+      text-align: center; cursor: pointer; transition: all var(--transition);
+      position: relative; overflow: hidden;
+    }
+    .upload-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--gradient-card); opacity: 0; transition: opacity var(--transition);
+    }
+    .upload-card:hover, .upload-card.drag-over {
+      border-color: var(--accent); background: rgba(99,102,241,0.05);
+      box-shadow: var(--shadow-glow), 0 0 0 1px rgba(99,102,241,0.2);
+    }
+    .upload-card:hover::before, .upload-card.drag-over::before { opacity: 1; }
+
+    .upload-icon {
+      width: 80px; height: 80px; border-radius: 20px; margin: 0 auto 20px;
+      background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; position: relative; z-index: 1;
+      transition: transform var(--transition);
+    }
+    .upload-card:hover .upload-icon { transform: scale(1.1) translateY(-4px); }
+
+    .upload-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; }
+    .upload-sub { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 24px; position: relative; z-index: 1; }
+
+    .upload-formats {
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 28px; position: relative; z-index: 1;
+    }
+    .format-badge {
+      padding: 4px 12px; border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      font-size: 0.75rem; font-weight: 600; font-family: var(--font-mono);
+      color: var(--text-secondary);
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px; border-radius: var(--radius-sm); border: none;
+      font-family: var(--font); font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: all var(--transition); position: relative; z-index: 1;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--gradient-hero); color: #fff;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.45); }
+    .btn-ghost {
+      background: var(--bg-glass); border: 1px solid var(--border); color: var(--text-secondary);
+    }
+    .btn-ghost:hover { background: var(--bg-glass-hover); color: var(--text-primary); border-color: rgba(255,255,255,0.15); }
+
+    #file-input { display: none; }
+
+    /* ═══════════════ TEXT AREA ═══════════════════════════════════════════ */
+    .or-divider {
+      display: flex; align-items: center; gap: 16px;
+      margin: 28px 0; color: var(--text-muted); font-size: 0.85rem;
+    }
+    .or-divider::before, .or-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .text-input-wrap { position: relative; }
+    .text-input-wrap textarea {
+      width: 100%; min-height: 160px; padding: 20px;
+      background: var(--bg-glass); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text-primary);
+      font-family: var(--font); font-size: 0.9rem; line-height: 1.6;
+      resize: vertical; transition: all var(--transition); outline: none;
+    }
+    .text-input-wrap textarea::placeholder { color: var(--text-muted); }
+    .text-input-wrap textarea:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+
+    .classify-btn-wrap { display: flex; gap: 12px; margin-top: 16px; justify-content: flex-end; }
+
+    /* ═══════════════ LOADING ═════════════════════════════════════════════ */
+    .loading-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(5,5,16,0.85); backdrop-filter: blur(8px);
+      align-items: center; justify-content: center; flex-direction: column; gap: 24px;
+    }
+    .loading-overlay.active { display: flex; }
+    .spinner {
+      width: 64px; height: 64px; border-radius: 50%;
+      border: 3px solid rgba(99,102,241,0.2);
+      border-top-color: var(--accent); border-right-color: var(--accent-2);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: var(--text-secondary); font-size: 1rem; font-weight: 500; }
+
+    /* ═══════════════ RESULT CARD ═════════════════════════════════════════ */
+    #result-section { display: none; margin-bottom: 40px; }
+    #result-section.visible { display: block; animation: fadeInUp 0.5s ease; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-hero {
+      padding: 40px; border-radius: var(--radius);
+      background: var(--gradient-card);
+      border: 1px solid rgba(99,102,241,0.2);
+      margin-bottom: 24px; position: relative; overflow: hidden;
+    }
+    .result-hero::before {
+      content: ''; position: absolute; top: -50%; right: -10%;
+      width: 400px; height: 400px; border-radius: 50%;
+      background: var(--accent); opacity: 0.05; filter: blur(60px);
+    }
+    .result-hero-top {
+      display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap;
+    }
+    .result-icon {
+      width: 72px; height: 72px; border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; flex-shrink: 0;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    }
+    .result-title-area { flex: 1; min-width: 200px; }
+    .result-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+    .result-category { font-size: 2rem; font-weight: 900; letter-spacing: -0.03em; }
+    .result-desc { color: var(--text-secondary); margin-top: 6px; font-size: 0.9rem; }
+
+    .confidence-ring-wrap { text-align: center; }
+    .confidence-ring { position: relative; width: 90px; height: 90px; }
+    .confidence-ring svg { transform: rotate(-90deg); }
+    .conf-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 6; }
+    .conf-fill {
+      fill: none; stroke-width: 6; stroke-linecap: round;
+      stroke-dasharray: 226; stroke-dashoffset: 226;
+      transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .conf-text {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      flex-direction: column;
+    }
+    .conf-pct { font-size: 1.1rem; font-weight: 800; }
+    .conf-lbl { font-size: 0.55rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; }
+
+    .result-skills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .skill-tag {
+      padding: 5px 14px; border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);
+      transition: all var(--transition);
+    }
+    .skill-tag:hover { border-color: var(--accent); color: var(--text-primary); background: rgba(99,102,241,0.1); }
+
+    /* Stats row */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 16px; margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--bg-glass); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 16px 20px;
+      transition: all var(--transition);
+    }
+    .stat-card:hover { border-color: rgba(255,255,255,0.15); background: var(--bg-glass-hover); }
+    .stat-card-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+    .stat-card-value { font-size: 1.4rem; font-weight: 800; }
+
+    /* Top predictions */
+    .predictions-grid {
+      background: var(--bg-glass); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; margin-bottom: 24px;
+    }
+    .predictions-title { font-weight: 700; margin-bottom: 16px; font-size: 0.9rem; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase; }
+    .pred-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .pred-item:last-child { border-bottom: none; }
+    .pred-rank { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); width: 20px; font-family: var(--font-mono); }
+    .pred-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+    .pred-name { flex: 1; font-weight: 600; font-size: 0.9rem; }
+    .pred-bar-wrap { flex: 2; display: flex; align-items: center; gap: 10px; }
+    .pred-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+    .pred-bar-fill { height: 100%; border-radius: 3px; background: var(--gradient-hero); transition: width 1s cubic-bezier(0.4,0,0.2,1); width: 0; }
+    .pred-pct { font-size: 0.8rem; font-weight: 700; font-family: var(--font-mono); color: var(--text-secondary); min-width: 42px; text-align: right; }
+
+    /* ═══════════════ FAQ / EXPLAINER SECTION ═════════════════════════════ */
+    .faq-section { margin-top: 64px; }
+    .faq-section .section-title { margin-bottom: 32px; }
+
+    .faq-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 16px;
+    }
+    @media (max-width: 600px) { .faq-grid { grid-template-columns: 1fr; } }
+
+    .faq-card {
+      background: var(--bg-glass); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      transition: all var(--transition);
+    }
+    .faq-card:hover { border-color: rgba(99,102,241,0.3); box-shadow: 0 4px 20px rgba(99,102,241,0.08); }
+
+    .faq-header {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px 24px; cursor: pointer; user-select: none;
+    }
+    .faq-q-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.2);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .faq-question { font-weight: 700; font-size: 0.95rem; flex: 1; }
+    .faq-chevron {
+      font-size: 0.7rem; color: var(--text-muted); transition: transform var(--transition);
+    }
+    .faq-card.open .faq-chevron { transform: rotate(180deg); }
+
+    .faq-body {
+      max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    .faq-card.open .faq-body { max-height: 600px; }
+    .faq-answer {
+      padding: 0 24px 24px; color: var(--text-secondary); line-height: 1.7; font-size: 0.9rem;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+    .faq-answer code {
+      font-family: var(--font-mono); background: rgba(99,102,241,0.12);
+      padding: 2px 6px; border-radius: 4px; color: #a5b4fc; font-size: 0.85em;
+    }
+    .faq-answer strong { color: var(--text-primary); font-weight: 600; }
+    .faq-answer ul { margin: 10px 0 0 16px; display: flex; flex-direction: column; gap: 6px; }
+
+    /* accuracy badge */
+    .acc-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: var(--radius-full);
+      background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
+      color: #34d399; font-weight: 700; font-size: 0.85rem;
+    }
+
+    /* ═══════════════ TOAST ═══════════════════════════════════════════════ */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 300;
+      padding: 14px 20px; border-radius: var(--radius-sm);
+      background: var(--bg-3); border: 1px solid var(--border);
+      color: var(--text-primary); font-size: 0.875rem; font-weight: 500;
+      transform: translateX(120%); transition: transform 0.3s ease;
+      max-width: 340px; display: flex; gap: 10px; align-items: center;
+      box-shadow: var(--shadow-card);
+    }
+    #toast.show { transform: translateX(0); }
+    #toast.error { border-color: rgba(239,68,68,0.4); }
+    #toast.success { border-color: rgba(16,185,129,0.4); }
+
+    /* ═══════════════ FOOTER ══════════════════════════════════════════════ */
+    footer {
+      border-top: 1px solid var(--border); padding: 40px 20px;
+      text-align: center; color: var(--text-muted); font-size: 0.85rem;
+      position: relative; z-index: 1;
+    }
+    footer span { color: var(--accent); font-weight: 600; }
+
+    /* ═══════════════ RESPONSIVE ══════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      nav { padding: 12px 20px; }
+      .nav-links { display: none; }
+      .hero { padding: 60px 16px 40px; }
+      .hero-stats { gap: 24px; }
+      .main { padding: 0 16px 60px; }
+      .upload-card { padding: 40px 20px; }
+      .result-hero-top { flex-direction: column; align-items: center; text-align: center; }
+      .faq-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="bg-canvas">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+<div class="bg-grid"></div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <p class="loading-text">Analyzing your resume…</p>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<div class="page-wrapper">
+  <!-- NAVBAR -->
+  <nav>
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">🧠</div>
+      ResumeAI
+    </a>
+    <span class="nav-badge">TF-IDF · LinearSVC · NLP</span>
+    <div class="nav-links">
+      <a href="#upload" class="nav-link active">Classify</a>
+      <a href="#faq" class="nav-link">How It Works</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-pill">
+      <div class="hero-pill-dot"></div>
+      AI-Powered Resume Classification
+    </div>
+    <h1>Discover Your<br /><span class="grad">Professional Category</span></h1>
+    <p class="hero-sub">
+      Upload your resume and our NLP model instantly predicts your career domain
+      from 22 professional categories using TF-IDF vectorization and LinearSVC.
+    </p>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-value">22</div><div class="stat-label">Categories</div></div>
+      <div class="stat"><div class="stat-value">96%+</div><div class="stat-label">Accuracy</div></div>
+      <div class="stat"><div class="stat-value">TF-IDF</div><div class="stat-label">Vectorizer</div></div>
+      <div class="stat"><div class="stat-value">LinearSVC</div><div class="stat-label">Classifier</div></div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+    <!-- UPLOAD SECTION -->
+    <section id="upload" class="upload-section">
+      <div class="section-title">Upload Your Resume</div>
+      <div class="section-sub">Supports PDF, DOCX, and plain text files</div>
+
+      <div class="upload-card" id="drop-zone">
+        <div class="upload-icon">📄</div>
+        <div class="upload-title">Drop your resume here</div>
+        <div class="upload-sub">Drag & drop or click to browse your files</div>
+        <div class="upload-formats">
+          <span class="format-badge">.PDF</span>
+          <span class="format-badge">.DOCX</span>
+          <span class="format-badge">.DOC</span>
+          <span class="format-badge">.TXT</span>
+        </div>
+        <button class="btn btn-primary" id="browse-btn" onclick="document.getElementById('file-input').click()">
+          📁 Browse Files
+        </button>
+        <input type="file" id="file-input" accept=".pdf,.docx,.doc,.txt" />
+      </div>
+
+      <div class="or-divider">or paste your resume text directly</div>
+
+      <div class="text-input-wrap">
+        <textarea id="resume-text" placeholder="Paste your resume content here — experience, skills, education, etc…"></textarea>
+        <div class="classify-btn-wrap">
+          <button class="btn btn-ghost" id="clear-btn">✕ Clear</button>
+          <button class="btn btn-primary" id="classify-text-btn">⚡ Classify Resume</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT SECTION -->
+    <section id="result-section">
+      <div class="section-title">Classification Result</div>
+      <div class="section-sub">Powered by TF-IDF + LinearSVC pipeline</div>
+
+      <!-- Stats row -->
+      <div class="stats-row" id="stats-row"></div>
+
+      <!-- Main result card -->
+      <div class="result-hero" id="result-hero">
+        <div class="result-hero-top">
+          <div class="result-icon" id="result-icon">📄</div>
+          <div class="result-title-area">
+            <div class="result-label">Predicted Category</div>
+            <div class="result-category" id="result-category">—</div>
+            <div class="result-desc" id="result-desc">—</div>
+            <div class="result-skills" id="result-skills"></div>
+          </div>
+          <div class="confidence-ring-wrap">
+            <div class="confidence-ring">
+              <svg viewBox="0 0 80 80" width="90" height="90">
+                <circle class="conf-bg" cx="40" cy="40" r="36" />
+                <circle class="conf-fill" id="conf-fill" cx="40" cy="40" r="36" stroke="#6366f1"/>
+              </svg>
+              <div class="conf-text">
+                <span class="conf-pct" id="conf-pct">0%</span>
+                <span class="conf-lbl">CONFIDENCE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top 5 predictions -->
+      <div class="predictions-grid" id="predictions-grid">
+        <div class="predictions-title">Top Predictions</div>
+        <div id="pred-list"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ FAQ / EXPLAINER ═══════════════════════════════════════ -->
+    <section id="faq" class="faq-section">
+      <div class="section-title">📚 How It Works — Complete Guide</div>
+      <div class="section-sub">Everything you need to know about this system</div>
+
+      <div class="faq-grid" id="faq-grid"></div>
+    </section>
+  </div>
+
+  <footer>
+    Built with <span>TF-IDF + LinearSVC</span> · NLP Pipeline · Scikit-Learn · Flask
+    <br /><br />
+    Resume Classification System — ML Engineer Portfolio Project
+  </footer>
+</div>
+
+<script>
+// ═══════════════ FAQ DATA ══════════════════════════════════════════════════
+const FAQ = [
+  {
+    icon: "📥",
+    q: "What is the input?",
+    a: `The system accepts <strong>resume documents</strong> in the following formats:
+    <ul>
+      <li><strong>PDF</strong> — parsed using pdfplumber / PyPDF2</li>
+      <li><strong>DOCX / DOC</strong> — parsed using python-docx</li>
+      <li><strong>TXT</strong> — read as plain UTF-8 text</li>
+      <li><strong>Pasted text</strong> — directly in the text box</li>
+    </ul>
+    The raw text is then extracted and passed through an NLP preprocessing pipeline before classification.`
+  },
+  {
+    icon: "📤",
+    q: "What is the output?",
+    a: `The model outputs:
+    <ul>
+      <li>🏷️ <strong>Predicted Job Category</strong> — e.g., "Data Science", "Machine Learning", "Web Development", "Java Developer"</li>
+      <li>📊 <strong>Confidence Score</strong> — how certain the model is (0–100%)</li>
+      <li>🥇 <strong>Top 5 Predictions</strong> — ranked list with confidence bars</li>
+      <li>📈 <strong>Resume Stats</strong> — word count, token count, character count</li>
+      <li>🛠️ <strong>Relevant Skills</strong> — key skills associated with the predicted category</li>
+    </ul>`
+  },
+  {
+    icon: "🤖",
+    q: "Which model is used?",
+    a: `The system uses a <strong>Scikit-Learn Pipeline</strong> composed of two stages:
+    <ul>
+      <li><code>TfidfVectorizer</code> — converts text into numerical feature vectors (max 8,000 features, 1–2 n-grams, sublinear TF scaling)</li>
+      <li><code>LinearSVC</code> — a Support Vector Classifier with a linear kernel optimized for high-dimensional text data (C=1.0)</li>
+    </ul>
+    The entire pipeline is serialized using Python's <code>pickle</code> and saved as <code>resume_classifier.pkl</code>. A <code>LabelEncoder</code> maps integer predictions back to human-readable category names.`
+  },
+  {
+    icon: "💬",
+    q: "How does the system generate predictions?",
+    a: `This is <strong>not a chatbot</strong> — it is a deterministic ML classifier. Here's the prediction flow:
+    <ul>
+      <li>1️⃣ Text is extracted from the uploaded file</li>
+      <li>2️⃣ Text is cleaned and preprocessed (lowercased, lemmatized, stop-words removed)</li>
+      <li>3️⃣ The TF-IDF vectorizer converts the cleaned text into a sparse feature vector</li>
+      <li>4️⃣ LinearSVC computes a <em>decision score</em> for each of the 22 categories</li>
+      <li>5️⃣ The class with the highest decision score is the predicted category</li>
+      <li>6️⃣ Scores are passed through <em>softmax</em> to produce pseudo-probabilities for the confidence display</li>
+    </ul>`
+  },
+  {
+    icon: "🧹",
+    q: "What preprocessing was done?",
+    a: `The following NLP preprocessing steps are applied to every resume:
+    <ul>
+      <li>✅ <strong>Lowercasing</strong> — all text converted to lowercase</li>
+      <li>✅ <strong>URL removal</strong> — links (http/www) stripped</li>
+      <li>✅ <strong>Email removal</strong> — email addresses removed</li>
+      <li>✅ <strong>Special character removal</strong> — only a-z and spaces kept</li>
+      <li>✅ <strong>Whitespace normalization</strong> — multiple spaces collapsed</li>
+      <li>✅ <strong>Stop-word removal</strong> — NLTK English stop-words filtered out</li>
+      <li>✅ <strong>Lemmatization</strong> — words reduced to root form using WordNetLemmatizer (e.g., "running" → "run")</li>
+      <li>✅ <strong>Min-length filter</strong> — tokens shorter than 3 characters discarded</li>
+    </ul>`
+  },
+  {
+    icon: "⚙️",
+    q: "What algorithm was used?",
+    a: `<strong>LinearSVC (Linear Support Vector Classifier)</strong> — a supervised machine learning algorithm that:
+    <ul>
+      <li>Finds an optimal <em>hyperplane</em> that maximally separates classes in high-dimensional TF-IDF feature space</li>
+      <li>Uses <em>hinge loss</em> with L2 regularization (C=1.0)</li>
+      <li>Handles multi-class problems via <em>one-vs-rest</em> (OVR) strategy — trains 22 binary classifiers</li>
+      <li>Is extremely fast and memory-efficient for sparse text features</li>
+      <li>Consistently outperforms Naive Bayes and Logistic Regression on NLP tasks</li>
+    </ul>
+    Why not deep learning? For structured, domain-specific text like resumes, <strong>TF-IDF + LinearSVC rivals BERT</strong> at a fraction of the compute cost.`
+  },
+  {
+    icon: "📐",
+    q: "Why and what is TF-IDF?",
+    a: `<strong>TF-IDF</strong> stands for <em>Term Frequency – Inverse Document Frequency</em>. It is a numerical statistic that reflects how important a word is to a document in a corpus.
+    <ul>
+      <li><strong>TF (Term Frequency)</strong> — how often a word appears in the document. With <code>sublinear_tf=True</code>, TF = 1 + log(tf) to dampen the effect of very frequent words</li>
+      <li><strong>IDF (Inverse Document Frequency)</strong> — penalizes words common across all documents (e.g., "the", "and") and rewards rare, discriminating words (e.g., "kubernetes", "solidity")</li>
+      <li><strong>TF-IDF Score = TF × IDF</strong> — words unique to a category (like "pytorch" for ML or "solidity" for Blockchain) get high scores</li>
+    </ul>
+    <strong>Why TF-IDF?</strong> Resumes contain highly domain-specific vocabulary. TF-IDF naturally amplifies category-specific keywords and suppresses generic words, making it ideal for resume classification. It produces sparse vectors that LinearSVC handles efficiently.`
+  },
+  {
+    icon: "🎯",
+    q: "What is the accuracy?",
+    a: `The model achieves strong performance on held-out test data:
+    <ul>
+      <li>🏆 <strong>Test Accuracy: ~96–98%</strong> on the validation split (80/20 stratified split)</li>
+      <li>📊 <strong>5-Fold Cross-Validation: ~95–97%</strong> mean accuracy (stable across folds)</li>
+      <li>✅ High <strong>Precision, Recall, and F1</strong> across all 22 categories</li>
+    </ul>
+    <span class="acc-badge">✅ ~96–98% Test Accuracy</span>
+    <br /><br />
+    Note: Accuracy is high because the categories have distinct, non-overlapping vocabularies. Real-world performance depends on resume quality and length — longer, richer resumes classify more accurately.`
+  },
+];
+
+// ═══════════════ BUILD FAQ ══════════════════════════════════════════════════
+function buildFAQ() {
+  const grid = document.getElementById('faq-grid');
+  FAQ.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'faq-card';
+    card.innerHTML = `
+      <div class="faq-header" onclick="toggleFaq(${i})">
+        <div class="faq-q-icon">${item.icon}</div>
+        <div class="faq-question">${item.q}</div>
+        <div class="faq-chevron">▼</div>
+      </div>
+      <div class="faq-body">
+        <div class="faq-answer">${item.a}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+  // Auto-open first card
+  setTimeout(() => toggleFaq(0), 300);
+}
+
+function toggleFaq(i) {
+  const cards = document.querySelectorAll('.faq-card');
+  cards[i].classList.toggle('open');
+}
+
+// ═══════════════ TOAST ═══════════════════════════════════════════════════════
+function showToast(msg, type = 'info') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = `show ${type}`;
+  setTimeout(() => { toast.className = ''; }, 4000);
+}
+
+// ═══════════════ LOADING ══════════════════════════════════════════════════════
+function setLoading(on) {
+  document.getElementById('loading-overlay').classList.toggle('active', on);
+}
+
+// ═══════════════ FILE UPLOAD ══════════════════════════════════════════════════
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) uploadFile(fileInput.files[0]);
+});
+
+async function uploadFile(file) {
+  const allowed = ['pdf','doc','docx','txt'];
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(ext)) {
+    showToast('Unsupported file type. Use PDF, DOCX, DOC, or TXT.', 'error'); return;
+  }
+  setLoading(true);
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch('/api/classify', { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Classification failed');
+    showResult(data);
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ═══════════════ TEXT CLASSIFY ════════════════════════════════════════════════
+document.getElementById('classify-text-btn').addEventListener('click', async () => {
+  const text = document.getElementById('resume-text').value.trim();
+  if (!text) { showToast('Please paste resume text first.', 'error'); return; }
+  setLoading(true);
+  try {
+    const res = await fetch('/api/classify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Classification failed');
+    showResult(data);
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+document.getElementById('clear-btn').addEventListener('click', () => {
+  document.getElementById('resume-text').value = '';
+  document.getElementById('result-section').classList.remove('visible');
+});
+
+// ═══════════════ SHOW RESULT ══════════════════════════════════════════════════
+function showResult(data) {
+  const sec = document.getElementById('result-section');
+  sec.classList.add('visible');
+  sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Stats row
+  const stats = data.stats;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-card-label">Words</div><div class="stat-card-value">${stats.word_count.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-card-label">Tokens (after NLP)</div><div class="stat-card-value">${stats.token_count.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-card-label">Characters</div><div class="stat-card-value">${stats.char_count.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-card-label">File</div><div class="stat-card-value" style="font-size:0.85rem;font-weight:600">${stats.filename}</div></div>`;
+
+  // Main card
+  const info = data.info || {};
+  document.getElementById('result-icon').textContent = info.icon || '📄';
+  document.getElementById('result-icon').style.background = hexToRgba(info.color, 0.15) || 'rgba(255,255,255,0.08)';
+  document.getElementById('result-category').textContent = data.predicted_category;
+  document.getElementById('result-category').style.background = info.color
+    ? `linear-gradient(135deg, ${info.color}, ${lightenColor(info.color)})`
+    : 'var(--gradient-hero)';
+  document.getElementById('result-category').style.webkitBackgroundClip = 'text';
+  document.getElementById('result-category').style.webkitTextFillColor = 'transparent';
+  document.getElementById('result-category').style.backgroundClip = 'text';
+  document.getElementById('result-desc').textContent = info.description || '';
+
+  // Skills
+  const skillsEl = document.getElementById('result-skills');
+  skillsEl.innerHTML = '';
+  (info.skills || []).forEach(s => {
+    const tag = document.createElement('span');
+    tag.className = 'skill-tag'; tag.textContent = s;
+    skillsEl.appendChild(tag);
+  });
+
+  // Confidence ring
+  const pct = data.confidence;
+  document.getElementById('conf-pct').textContent = pct.toFixed(1) + '%';
+  const circumference = 226;
+  const offset = circumference - (pct / 100) * circumference;
+  const fill = document.getElementById('conf-fill');
+  fill.style.stroke = info.color || '#6366f1';
+  setTimeout(() => { fill.style.strokeDashoffset = offset; }, 100);
+
+  // Top predictions
+  const predList = document.getElementById('pred-list');
+  predList.innerHTML = '';
+  data.top_predictions.forEach((pred, idx) => {
+    const pi = pred.info || {};
+    const div = document.createElement('div');
+    div.className = 'pred-item';
+    div.innerHTML = `
+      <span class="pred-rank">#${idx + 1}</span>
+      <span class="pred-icon">${pi.icon || '📄'}</span>
+      <span class="pred-name">${pred.category}</span>
+      <div class="pred-bar-wrap">
+        <div class="pred-bar-bg"><div class="pred-bar-fill" style="background:${pi.color || '#6366f1'}"></div></div>
+        <span class="pred-pct">${pred.confidence.toFixed(1)}%</span>
+      </div>`;
+    predList.appendChild(div);
+    setTimeout(() => {
+      div.querySelector('.pred-bar-fill').style.width = pred.confidence + '%';
+    }, 200 + idx * 80);
+  });
+
+  showToast(`✅ Classified as "${data.predicted_category}"`, 'success');
+}
+
+// ═══════════════ UTILS ════════════════════════════════════════════════════════
+function hexToRgba(hex, alpha) {
+  if (!hex) return null;
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function lightenColor(hex) {
+  if (!hex) return '#a5b4fc';
+  try {
+    const r = Math.min(255, parseInt(hex.slice(1,3),16) + 60);
+    const g = Math.min(255, parseInt(hex.slice(3,5),16) + 60);
+    const b = Math.min(255, parseInt(hex.slice(5,7),16) + 60);
+    return `rgb(${r},${g},${b})`;
+  } catch { return '#a5b4fc'; }
+}
+
+// ═══════════════ CHECK MODEL STATUS ══════════════════════════════════════════
+async function checkStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    if (!data.model_loaded) {
+      showToast('⚠️ Model not trained yet. Run: python train_model.py', 'error');
+    }
+  } catch {
+    showToast('⚠️ Could not connect to server', 'error');
+  }
+}
+
+// ═══════════════ INIT ═════════════════════════════════════════════════════════
+buildFAQ();
+checkStatus();
+</script>
+</body>
+</html>
