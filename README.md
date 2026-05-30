@@ -83,15 +83,13 @@ SVM performs exceptionally well on sparse high-dimensional text data and is comp
 
 ---
 
-## 🔮 Future Improvements
+## Future Improvements
 
-- **BERT-based Classification**: Upgrade the text vectorizer and model to fine-tuned BERT/DistilBERT architectures.
-- **Transformers**: Leverage advanced transformers for deep semantic search and contextual classification.
-- **LangChain Integration**: Connect LLMs to perform agentic resume filtering and summaries.
-- **Resume Job Matching**: Build similarity indices comparing candidate resumes against targeted job descriptions.
-- **ATS Score Prediction**: Predict how well a resume complies with Applicant Tracking Systems.
-- **Skill Gap Analysis**: Identify missing key qualifications for particular career categories and recommend improvements.
-- **Hugging Face Deployment**: Deploy the web app dynamically as a Hugging Face Space for public interactive access.
+- Train on a larger real-world resume dataset
+- Add BERT/Transformer-based classification models
+- Improve support for additional resume formats
+- Add resume skill extraction and recommendations
+- Enhance category coverage with more job roles
 
 ---
 
