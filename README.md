@@ -9,13 +9,13 @@ It features a stunning, state-of-the-art **glassmorphism dark-mode UI** with rea
 ## 📷 Demo
 
 ### Home Page
-![Home](screenshots/home.png)
+![Home](screenshots/home_clean.png)
 
 ### Prediction Result
-![Prediction](screenshots/prediction.png)
+![Prediction](screenshots/prediction_clean.png)
 
 ### FAQ
-![FAQ](screenshots/faq.png)
+![FAQ](screenshots/faq_clean.png)
 
 ---
 
@@ -167,9 +167,9 @@ The system generates a detailed confusion matrix upon training, showing performa
 ├── .gitignore                 # Standard Python gitignore rules
 ├── LICENSE                    # Repository license
 ├── screenshots/               # Folder containing demonstration images
-│   ├── home.png
-│   ├── prediction.png
-│   └── faq.png
+│   ├── home_clean.png
+│   ├── prediction_clean.png
+│   └── faq_clean.png
 └── static/
     ├── index.html             # Beautiful glassmorphism frontend application
     └── confusion_matrix.png   # Generated training confusion matrix heatmap
